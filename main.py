@@ -11,6 +11,7 @@ from database import SessionLocal
 from models import Item
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from passlib.context import CryptContext
+from fastapi.middleware.cors import CORSMiddleware
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -51,7 +52,22 @@ def get_db():
     finally:
         db.close()
 
+
+
+
+
 app = FastAPI()
+
+
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # later restrict this
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class EmployeeSignupDetails(BaseModel):
     employee_name : str
@@ -129,40 +145,82 @@ def check_admin(role: str):
 
 def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
-@app.post("/employee_info")
-def signup_info(employee: EmployeeSignupDetails):
+# @app.post("/employee_info")
+# def signup_info(employee: EmployeeSignupDetails):
 
+#     db = SessionLocal()
+#     existing_employee = db.query(Employee).filter(
+#         (Employee.employee_code == employee.employee_code) |
+#         (Employee.employee_gmail == employee.employee_gmail)
+#     ).first()
+
+#     if existing_employee:
+#         return {"message": "Employee already registered"}
+    
+#     hashed_password = hash_password(employee.password)
+#     try:
+#         new_employee = Employee(
+#             employee_name=employee.employee_name,
+#             employee_gmail=employee.employee_gmail,
+#             employee_code=employee.employee_code,
+#             password=hashed_password,
+#             role="employee"
+#         )
+
+#         db.add(new_employee)
+#         db.commit()
+#         db.refresh(new_employee)
+
+#     except IntegrityError:
+#         db.rollback()
+#         return {"message": "Duplicate entry error"}
+
+#     finally:
+#         db.close()
+
+#     return {"message": "Employee added successfully"}
+
+
+
+
+from fastapi import Form
+
+@app.post("/employee_info")
+def signup_info(
+    employee_name: str = Form(...),
+    employee_gmail: str = Form(...),
+    employee_code: int = Form(...),
+    password: str = Form(...)
+):
     db = SessionLocal()
+
     existing_employee = db.query(Employee).filter(
-        (Employee.employee_code == employee.employee_code) |
-        (Employee.employee_gmail == employee.employee_gmail)
+        (Employee.employee_code == employee_code) |
+        (Employee.employee_gmail == employee_gmail)
     ).first()
 
     if existing_employee:
         return {"message": "Employee already registered"}
-    
-    hashed_password = hash_password(employee.password)
-    try:
-        new_employee = Employee(
-            employee_name=employee.employee_name,
-            employee_gmail=employee.employee_gmail,
-            employee_code=employee.employee_code,
-            password=hashed_password,
-            role="employee"
-        )
 
-        db.add(new_employee)
-        db.commit()
-        db.refresh(new_employee)
+    hashed_password = hash_password(password)
 
-    except IntegrityError:
-        db.rollback()
-        return {"message": "Duplicate entry error"}
+    new_employee = Employee(
+        employee_name=employee_name,
+        employee_gmail=employee_gmail,
+        employee_code=employee_code,
+        password=hashed_password,
+        role="employee"
+    )
 
-    finally:
-        db.close()
+    db.add(new_employee)
+    db.commit()
+    db.close()
 
     return {"message": "Employee added successfully"}
+
+
+
+
 
 #Login Api
 @app.post("/login")
