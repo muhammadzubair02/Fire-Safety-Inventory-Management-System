@@ -14,8 +14,9 @@ from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def hash_password(password: str):
-    return pwd_context.hash(password[:72])
+password = "IMS@263262"
+hashed_password = pwd_context.hash(password[:72])  # truncate if needed
+print(hashed_password)
 
 
 from dotenv import load_dotenv
